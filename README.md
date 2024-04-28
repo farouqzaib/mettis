@@ -60,11 +60,11 @@ go run cmd/server/main.go -httpAddr 127.0.0.1:8111 -nodeId 0 -raftAddr 127.0.0.1
 ```
 Replicas join the primary on `127.0.0.1:9000`
 ```bash
-go run cmd/server/main.go -httpAddr 127.0.0.1:8112 -nodeId 0 -raftAddr 127.0.0.1:9001 -joinAddr 127.0.0.1:8111
+go run cmd/server/main.go -httpAddr 127.0.0.1:8112 -nodeId 1 -raftAddr 127.0.0.1:9001 -joinAddr 127.0.0.1:8111
 ```
 
 ```bash
-go run cmd/server/main.go -httpAddr 127.0.0.1:8113 -nodeId 0 -raftAddr 127.0.0.1:9002 -joinAddr 127.0.0.1:8111
+go run cmd/server/main.go -httpAddr 127.0.0.1:8113 -nodeId 2 -raftAddr 127.0.0.1:9002 -joinAddr 127.0.0.1:8111
 ```
 
 #### TODO
