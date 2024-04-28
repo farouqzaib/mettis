@@ -27,6 +27,9 @@ uvicorn main:app
 ```
 
 Set an environment variable `EmbeddingHost` which points to the address of the embedding service
+```
+export EmbeddingHost="http://127.0.0.1:8000/embeddings"
+```
 
 Proceed to start instance(s) of the vector db
 ##### Run single-node
