@@ -2,7 +2,7 @@ xdb: Distributed lite vector database built from *scratch.
 
 #### What it does:
 - full-text search using proximity ranking
-- semantic search via HNSW + L2 distance
+- semantic search via HNSW + Cosine distance
 - integrated basic text embedding service  (Python http API around a sentence transformer)
 - (naive) weighted full-text + semantic search hybrid
 - in-memory serving + disk persistence
