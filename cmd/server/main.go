@@ -1,9 +1,13 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
 	"flag"
+	"fmt"
 	"log"
 	"log/slog"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -68,6 +72,18 @@ func main() {
 	go func() {
 		log.Fatal(srv.ListenAndServe())
 	}()
+
+	if joinAddr != "" {
+		b, err := json.Marshal(map[string]string{"addr": raftAddr, "nodeId": nodeId})
+		if err != nil {
+			panic(err)
+		}
+		resp, err := http.Post(fmt.Sprintf("http://%s/join", joinAddr), "application-type/json", bytes.NewReader(b))
+		if err != nil {
+			panic(err)
+		}
+		defer resp.Body.Close()
+	}
 
 	signal.Notify(
 		signalCh,
