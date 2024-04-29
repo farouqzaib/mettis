@@ -26,7 +26,7 @@ func TestHNSW(t *testing.T) {
 		}
 	}
 
-	hnsw := NewHNSW(5, 0.62, 10)
+	hnsw := NewHNSW(5, 0.62, 2, 10)
 
 	hnsw.Create(vectors)
 

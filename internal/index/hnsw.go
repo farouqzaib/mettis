@@ -8,7 +8,7 @@ import (
 	"math/rand"
 )
 
-type maxHeap []best
+type maxHeap []Candidate
 
 func (h maxHeap) Len() int { return len(h) }
 func (h maxHeap) Less(i, j int) bool {
@@ -19,7 +19,7 @@ func (h maxHeap) Swap(i, j int) { h[i], h[j] = h[j], h[i] }
 func (h *maxHeap) Push(x any) {
 	// Push and Pop use pointer receivers because they modify the slice's length,
 	// not just its contents.
-	*h = append(*h, x.(best))
+	*h = append(*h, x.(Candidate))
 }
 
 func (h *maxHeap) Pop() any {
@@ -30,7 +30,7 @@ func (h *maxHeap) Pop() any {
 	return x
 }
 
-type minHeap []best
+type minHeap []Candidate
 
 func (h minHeap) Len() int { return len(h) }
 func (h minHeap) Less(i, j int) bool {
@@ -41,7 +41,7 @@ func (h minHeap) Swap(i, j int) { h[i], h[j] = h[j], h[i] }
 func (h *minHeap) Push(x any) {
 	// Push and Pop use pointer receivers because they modify the slice's length,
 	// not just its contents.
-	*h = append(*h, x.(best))
+	*h = append(*h, x.(Candidate))
 }
 
 func (h *minHeap) Pop() any {
@@ -63,7 +63,7 @@ type Graph struct {
 	Elements []VectorNode
 }
 
-type best struct {
+type Candidate struct {
 	Distance float64
 	Entry    int
 }
@@ -71,42 +71,43 @@ type best struct {
 type HNSW struct {
 	L     int
 	mL    float64
+	M     int
 	EFC   int
 	Index []Graph
 }
 
-func NewHNSW(L int, mL float64, efc int) *HNSW {
+func NewHNSW(L int, mL float64, m int, efc int) *HNSW {
 	index := make([]Graph, L)
 
 	return &HNSW{
 		L:     L,
 		mL:    mL,
+		M:     m,
 		EFC:   efc,
 		Index: index,
 	}
 }
 
-func (hnsw *HNSW) searchLayer(graph Graph, entry int, query VectorNode, ef int) []best {
-	match := best{distance(query.Vector, graph.Elements[entry].Vector), entry}
+func (hnsw *HNSW) searchLayer(graph Graph, entry int, query VectorNode, ef int) []Candidate {
+	candidate := Candidate{distance(query.Vector, graph.Elements[entry].Vector), entry}
 
-	nearestNeighbours := &maxHeap{match}
+	nearestNeighbours := &maxHeap{candidate}
 	heap.Init(nearestNeighbours)
+
 	visited := make(map[int]map[float64]bool)
-	visited[match.Entry] = map[float64]bool{match.Distance: true}
-	// candidate := []best{match}
+	visited[candidate.Entry] = map[float64]bool{candidate.Distance: true}
 
-	candidateHeap := &minHeap{match}
-
+	candidateHeap := &minHeap{candidate}
 	heap.Init(candidateHeap)
 
 	for candidateHeap.Len() > 0 {
-		cv := heap.Pop(candidateHeap).(best)
+		current := heap.Pop(candidateHeap).(Candidate)
 
-		if cv.Distance > (*nearestNeighbours)[0].Distance {
+		if current.Distance > (*nearestNeighbours)[0].Distance {
 			break
 		}
 
-		for _, e := range graph.Elements[cv.Entry].Indices {
+		for _, e := range graph.Elements[current.Entry].Indices {
 			d := distance(query.Vector, graph.Elements[e].Vector)
 
 			if val, ok := visited[e]; ok {
@@ -122,12 +123,9 @@ func (hnsw *HNSW) searchLayer(graph Graph, entry int, query VectorNode, ef int) 
 			}
 
 			if d < (*nearestNeighbours)[0].Distance || nearestNeighbours.Len() < ef {
-				heap.Push(candidateHeap, best{Distance: d, Entry: e})
-				heap.Push(nearestNeighbours, best{Distance: d, Entry: e})
-				// nearestNeighbours = insertSorted(nearestNeighbours, best{Distance: d, Entry: e})
+				heap.Push(candidateHeap, Candidate{Distance: d, Entry: e})
+				heap.Push(nearestNeighbours, Candidate{Distance: d, Entry: e})
 				if nearestNeighbours.Len() > ef {
-					// l := len(nearestNeighbours)
-					// nearestNeighbours = nearestNeighbours[:l-1]
 					_ = heap.Pop(nearestNeighbours)
 				}
 			}
@@ -217,8 +215,12 @@ func (hnsw *HNSW) insert(vec VectorNode) {
 			node := VectorNode{Vector: vec.Vector, Indices: []int{}, Entry: entry, ID: vec.ID}
 
 			nearestNeighbours := hnsw.searchLayer(hnsw.Index[i], startingNode, vec, hnsw.EFC)
-			m := int(math.Min(2.0, float64(len(nearestNeighbours))))
-			for _, neighbour := range nearestNeighbours[:m] {
+
+			m := int(math.Min(float64(hnsw.M), float64(len(nearestNeighbours))))
+			if len(nearestNeighbours) > 2 {
+				nearestNeighbours = nearestNeighbours[len(nearestNeighbours)-m-1:]
+			}
+			for _, neighbour := range nearestNeighbours {
 				//add every NN to the new node
 				node.Indices = append(node.Indices, neighbour.Entry)
 				//add the new node to every NN
