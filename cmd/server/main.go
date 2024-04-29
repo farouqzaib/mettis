@@ -33,6 +33,7 @@ func main() {
 	flag.Parse()
 
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	slog.SetDefault(logger)
 
 	config := storage.Config{}
 	config.Raft.LocalID = raft.ServerID(nodeId)
@@ -43,7 +44,7 @@ func main() {
 		config.Raft.Bootstrap = true
 	}
 
-	indexStorage, err := storage.NewDistributedDB("internal/storage/data/indexes", config)
+	indexStorage, err := storage.NewDistributedDB("internal/storage/data/indexes", config, logger)
 
 	if err != nil {
 		log.Fatal(err)

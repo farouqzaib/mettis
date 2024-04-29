@@ -19,11 +19,13 @@ type DistributedDB struct {
 	DB     *IndexStorage
 	raft   *raft.Raft
 	config Config
+	logger *slog.Logger
 }
 
-func NewDistributedDB(dataDir string, config Config) (*DistributedDB, error) {
+func NewDistributedDB(dataDir string, config Config, logger *slog.Logger) (*DistributedDB, error) {
 	d := &DistributedDB{}
 	d.config = config
+	d.logger = logger
 
 	if err := d.setupIndex(dataDir); err != nil {
 		return nil, err
@@ -37,7 +39,7 @@ func NewDistributedDB(dataDir string, config Config) (*DistributedDB, error) {
 }
 
 func (d *DistributedDB) setupIndex(dataDir string) error {
-	db, err := Open(dataDir)
+	db, err := Open(dataDir, d.logger)
 	if err != nil {
 		return err
 	}
@@ -179,7 +181,7 @@ func (d *DistributedDB) Search(query string, k int) ([]index.Match, error) {
 func (d *DistributedDB) Join(nodeID, addr string) error {
 	configFuture := d.raft.GetConfiguration()
 	if err := configFuture.Error(); err != nil {
-		slog.Error("failed to get raft configuration: %v", err)
+		d.logger.Error("failed to get raft configuration: %v", err)
 		return err
 	}
 
@@ -190,7 +192,7 @@ func (d *DistributedDB) Join(nodeID, addr string) error {
 			// However if *both* the ID and the address are the same, then nothing -- not even
 			// a join operation -- is needed.
 			if srv.Address == raft.ServerAddress(addr) && srv.ID == raft.ServerID(nodeID) {
-				slog.Info(fmt.Sprintf("node %s at %s already member of cluster, ignoring join request", nodeID, addr))
+				d.logger.Info(fmt.Sprintf("node %s at %s already member of cluster, ignoring join request", nodeID, addr))
 				return nil
 			}
 
@@ -205,7 +207,7 @@ func (d *DistributedDB) Join(nodeID, addr string) error {
 	if f.Error() != nil {
 		return f.Error()
 	}
-	slog.Info(fmt.Sprintf("node %s at %s joined successfully", nodeID, addr))
+	d.logger.Info(fmt.Sprintf("node %s at %s joined successfully", nodeID, addr))
 	return nil
 }
 

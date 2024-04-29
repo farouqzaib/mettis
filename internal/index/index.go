@@ -14,23 +14,25 @@ import (
 
 type InvertedIndex struct {
 	PostingsList map[string]SkipList
+	logger       *slog.Logger
 }
 
-func NewInvertedIndex() *InvertedIndex {
+func NewInvertedIndex(logger *slog.Logger) *InvertedIndex {
 	postingsList := map[string]SkipList{}
 	return &InvertedIndex{
 		PostingsList: postingsList,
+		logger:       logger,
 	}
 }
 
 func (i *InvertedIndex) Index(docID int, document string) {
-	slog.Info("index: indexing documents", slog.Int("docID", docID))
+	i.logger.Info("index: indexing documents", slog.Int("docID", docID))
 	tokens := analyzer.Analyze(document)
 	for j, word := range tokens {
 		_, ok := i.PostingsList[word]
 
 		if !ok {
-			i.PostingsList[word] = *NewSkipList()
+			i.PostingsList[word] = *NewSkipList(i.logger)
 		}
 
 		sk := i.PostingsList[word]
@@ -198,9 +200,9 @@ type Match struct {
 }
 
 func (i *InvertedIndex) RankProximity(query string, k int) []Match {
-	slog.Info("index: proximity ranking")
+	i.logger.Info("index: proximity ranking")
 	tokens := analyzer.Analyze(query)
-	slog.Info("index: search tokens", slog.String("tokens", fmt.Sprintf("%v", tokens)))
+	i.logger.Info("index: search tokens", slog.String("tokens", fmt.Sprintf("%v", tokens)))
 	if len(tokens) == 0 {
 		return []Match{}
 	}

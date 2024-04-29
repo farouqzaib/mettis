@@ -31,20 +31,21 @@ type IndexStorage struct {
 	vectorIndexSegmentReader   []*os.File
 	inMemorySegments           []index.InvertedIndex
 	inMemoryVectorSegments     []index.HNSW
+	logger                     *slog.Logger
 }
 
-func Open(dirname string) (*IndexStorage, error) {
+func Open(dirname string, logger *slog.Logger) (*IndexStorage, error) {
 	dataStorage, err := NewProvider(dirname)
 	if err != nil {
 		return nil, err
 	}
 
-	db := &IndexStorage{dataStorage: dataStorage}
+	db := &IndexStorage{dataStorage: dataStorage, logger: logger}
 	err = db.loadSegments()
 	if err != nil {
 		return nil, err
 	}
-	db.memtables.mutable = NewMemtable(memtableSizeLimit)
+	db.memtables.mutable = NewMemtable(memtableSizeLimit, logger)
 	db.memtables.queue = append(db.memtables.queue, db.memtables.mutable)
 
 	return db, nil
@@ -77,7 +78,7 @@ func (d *IndexStorage) Index(docID int, document string) error {
 			d.memtables.queue = d.memtables.queue[:len(d.memtables.queue)-1]
 		}
 
-		d.memtables.mutable = NewMemtable(memtableSizeLimit)
+		d.memtables.mutable = NewMemtable(memtableSizeLimit, d.logger)
 		d.memtables.queue = append(d.memtables.queue, d.memtables.mutable)
 	}
 
@@ -85,7 +86,7 @@ func (d *IndexStorage) Index(docID int, document string) error {
 }
 
 func (d *IndexStorage) rotateMemtables() *Memtable {
-	d.memtables.mutable = NewMemtable(memtableSizeLimit)
+	d.memtables.mutable = NewMemtable(memtableSizeLimit, d.logger)
 	d.memtables.queue = append(d.memtables.queue, d.memtables.mutable)
 	return d.memtables.mutable
 }
@@ -105,7 +106,7 @@ func (d *IndexStorage) Get(query string, k int) []index.Match {
 	for j := len(d.segments) - 1; j >= 0; j-- {
 		go func(j int) {
 
-			h := index.NewHybridSearch(&d.inMemorySegments[j], &d.inMemoryVectorSegments[j])
+			h := index.NewHybridSearch(&d.inMemorySegments[j], &d.inMemoryVectorSegments[j], d.logger)
 
 			val := h.Search(query, k)
 			matchesCh <- val

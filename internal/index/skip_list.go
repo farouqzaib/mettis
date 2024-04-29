@@ -2,6 +2,7 @@ package index
 
 import (
 	"errors"
+	"log/slog"
 	"math"
 	"math/rand"
 	"time"
@@ -38,12 +39,14 @@ type Node struct {
 type SkipList struct {
 	Head   *Node
 	Height int
+	logger *slog.Logger
 }
 
-func NewSkipList() *SkipList {
+func NewSkipList(logger *slog.Logger) *SkipList {
 	return &SkipList{
 		Head:   &Node{},
 		Height: 1,
+		logger: logger,
 	}
 }
 

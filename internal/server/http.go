@@ -26,16 +26,16 @@ func NewHttpServer(index *storage.DistributedDB, metadataStorage *bbolt.DB, logg
 }
 
 type httpServer struct {
-	Index           *storage.DistributedDB
-	Logger          *slog.Logger
-	MetadataStorage *bbolt.DB
+	index           *storage.DistributedDB
+	logger          *slog.Logger
+	metadataStorage *bbolt.DB
 }
 
 func newHttpServer(index *storage.DistributedDB, metadataStorage *bbolt.DB, logger *slog.Logger) *httpServer {
 	return &httpServer{
-		Index:           index,
-		Logger:          logger,
-		MetadataStorage: metadataStorage,
+		index:           index,
+		logger:          logger,
+		metadataStorage: metadataStorage,
 	}
 }
 
@@ -55,7 +55,7 @@ type SearchResponse struct {
 }
 
 func (s *httpServer) handleSearch(w http.ResponseWriter, r *http.Request) {
-	s.Logger.Info("http: search")
+	s.logger.Info("http: search")
 
 	var req SearchRequest
 
@@ -65,9 +65,9 @@ func (s *httpServer) handleSearch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s.Logger.Info("query term", slog.String("query", req.Query))
+	s.logger.Info("query term", slog.String("query", req.Query))
 
-	matches, err := s.Index.Search(req.Query, 10)
+	matches, err := s.index.Search(req.Query, 10)
 
 	if err != nil {
 		slog.Error("http: search", slog.String("error", err.Error()))
@@ -77,7 +77,7 @@ func (s *httpServer) handleSearch(w http.ResponseWriter, r *http.Request) {
 
 	res := SearchResponse{}
 
-	err = s.MetadataStorage.View(func(tx *bbolt.Tx) error {
+	err = s.metadataStorage.View(func(tx *bbolt.Tx) error {
 		b := tx.Bucket([]byte(storage.DocumentMetadataBucket))
 		if b == nil {
 			return errors.New("bucket does not exist")
@@ -125,7 +125,7 @@ type Document struct {
 }
 
 func (s *httpServer) handleIndex(w http.ResponseWriter, r *http.Request) {
-	s.Logger.Info("http: indexing")
+	s.logger.Info("http: indexing")
 	var req Document
 	decoder := json.NewDecoder(r.Body)
 	err := decoder.Decode(&req)
@@ -137,7 +137,7 @@ func (s *httpServer) handleIndex(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var docId int
-	err = s.MetadataStorage.Update(func(tx *bbolt.Tx) error {
+	err = s.metadataStorage.Update(func(tx *bbolt.Tx) error {
 		b := tx.Bucket([]byte(storage.DocumentMetadataBucket))
 		if b == nil {
 			return errors.New("bucket does not exist")
@@ -159,7 +159,7 @@ func (s *httpServer) handleIndex(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 
-	err = s.Index.Index(docId, req.Text)
+	err = s.index.Index(docId, req.Text)
 	if err != nil {
 		slog.Error("http: indexing", slog.String("error", err.Error()))
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -181,7 +181,7 @@ type JoinRequest struct {
 }
 
 func (s *httpServer) handleJoin(w http.ResponseWriter, r *http.Request) {
-	s.Logger.Info("http: cluster join")
+	s.logger.Info("http: cluster join")
 	var req JoinRequest
 	decoder := json.NewDecoder(r.Body)
 	err := decoder.Decode(&req)
@@ -192,7 +192,7 @@ func (s *httpServer) handleJoin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = s.Index.Join(req.NodeID, req.Addr)
+	err = s.index.Join(req.NodeID, req.Addr)
 
 	if err != nil {
 		slog.Error("http: cluster join", slog.String("error", err.Error()))

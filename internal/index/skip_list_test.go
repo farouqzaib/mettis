@@ -1,11 +1,12 @@
 package index
 
 import (
+	"log/slog"
 	"testing"
 )
 
 func TestSkipListSearch(t *testing.T) {
-	skipList := NewSkipList()
+	skipList := NewSkipList(slog.Default())
 
 	skipList.Insert(DocumentOffset{DocumentID: 1, Offset: 3})
 	skipList.Insert(DocumentOffset{DocumentID: 2, Offset: 9})
@@ -22,7 +23,7 @@ func TestSkipListSearch(t *testing.T) {
 }
 
 func TestSkipListLast(t *testing.T) {
-	skipList := NewSkipList()
+	skipList := NewSkipList(slog.Default())
 
 	skipList.Insert(DocumentOffset{DocumentID: 1, Offset: 3})
 	skipList.Insert(DocumentOffset{DocumentID: 2, Offset: 9})
@@ -41,7 +42,7 @@ func TestSkipListLast(t *testing.T) {
 }
 
 func TestSkipListFindLessThan(t *testing.T) {
-	skipList := NewSkipList()
+	skipList := NewSkipList(slog.Default())
 
 	skipList.Insert(DocumentOffset{DocumentID: 1, Offset: 2})
 	skipList.Insert(DocumentOffset{DocumentID: 3, Offset: 3})
@@ -57,7 +58,7 @@ func TestSkipListFindLessThan(t *testing.T) {
 }
 
 func TestSkipListFindLessThanWhenOffsetPresent(t *testing.T) {
-	skipList := NewSkipList()
+	skipList := NewSkipList(slog.Default())
 
 	skipList.Insert(DocumentOffset{DocumentID: 1, Offset: 3})
 	skipList.Insert(DocumentOffset{DocumentID: 2, Offset: 9})
@@ -77,7 +78,7 @@ func TestSkipListFindLessThanWhenOffsetPresent(t *testing.T) {
 }
 
 func TestSkipListFindGreaterThan(t *testing.T) {
-	skipList := NewSkipList()
+	skipList := NewSkipList(slog.Default())
 
 	skipList.Insert(DocumentOffset{DocumentID: 1, Offset: 1})
 	skipList.Insert(DocumentOffset{DocumentID: 1, Offset: 2})
@@ -96,7 +97,7 @@ func TestSkipListFindGreaterThan(t *testing.T) {
 }
 
 func TestSkipListFindGreaterThanWhenOffsetPresent(t *testing.T) {
-	skipList := NewSkipList()
+	skipList := NewSkipList(slog.Default())
 
 	skipList.Insert(DocumentOffset{DocumentID: 1, Offset: 3})
 	skipList.Insert(DocumentOffset{DocumentID: 2, Offset: 9})
@@ -116,7 +117,7 @@ func TestSkipListFindGreaterThanWhenOffsetPresent(t *testing.T) {
 }
 
 func TestSkipListFindGreaterThanOneRecord(t *testing.T) {
-	skipList := NewSkipList()
+	skipList := NewSkipList(slog.Default())
 
 	skipList.Insert(DocumentOffset{DocumentID: 1, Offset: 3})
 
@@ -131,7 +132,7 @@ func TestSkipListFindGreaterThanOneRecord(t *testing.T) {
 }
 
 func TestSkipListFindLessThanOneRecord(t *testing.T) {
-	skipList := NewSkipList()
+	skipList := NewSkipList(slog.Default())
 
 	skipList.Insert(DocumentOffset{DocumentID: 1, Offset: 3})
 

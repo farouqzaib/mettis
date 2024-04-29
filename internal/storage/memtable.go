@@ -1,6 +1,10 @@
 package storage
 
-import "github.com/farouqzaib/fast-search/internal/index"
+import (
+	"log/slog"
+
+	"github.com/farouqzaib/fast-search/internal/index"
+)
 
 // Many thanks: https://www.cloudcentric.dev/exploring-memtables/
 
@@ -9,13 +13,15 @@ type Memtable struct {
 	inMemoryVectorIndex   *index.HNSW
 	sizeUsed              int
 	sizeLimit             int
+	logger                *slog.Logger
 }
 
-func NewMemtable(sizeLimit int) *Memtable {
+func NewMemtable(sizeLimit int, logger *slog.Logger) *Memtable {
 	m := &Memtable{
-		inMemoryInvertedIndex: index.NewInvertedIndex(),
+		inMemoryInvertedIndex: index.NewInvertedIndex(logger),
 		inMemoryVectorIndex:   index.NewHNSW(5, 0.62, 10),
 		sizeLimit:             sizeLimit,
+		logger:                logger,
 	}
 
 	return m
@@ -32,7 +38,7 @@ func (m *Memtable) HasRoomForWrite(data []byte) bool {
 }
 
 func (m *Memtable) Insert(docID int, document string) {
-	h := index.NewHybridSearch(m.inMemoryInvertedIndex, m.inMemoryVectorIndex)
+	h := index.NewHybridSearch(m.inMemoryInvertedIndex, m.inMemoryVectorIndex, m.logger)
 	err := h.Index(docID, document)
 
 	if err != nil {
@@ -46,7 +52,7 @@ func (m *Memtable) Insert(docID int, document string) {
 }
 
 func (m *Memtable) Get(query string, k int) []index.Match {
-	h := index.NewHybridSearch(m.inMemoryInvertedIndex, m.inMemoryVectorIndex)
+	h := index.NewHybridSearch(m.inMemoryInvertedIndex, m.inMemoryVectorIndex, m.logger)
 
 	return h.Search(query, k)
 }

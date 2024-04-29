@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
+	"log/slog"
 	"math"
 	"net/http"
 	"os"
@@ -27,9 +28,10 @@ type IndexResults struct {
 type HybridSearch struct {
 	FTS      *InvertedIndex
 	Semantic *HNSW
+	logger   *slog.Logger
 }
 
-func NewHybridSearch(fts *InvertedIndex, semantic *HNSW) *HybridSearch {
+func NewHybridSearch(fts *InvertedIndex, semantic *HNSW, logger *slog.Logger) *HybridSearch {
 	return &HybridSearch{
 		FTS:      fts,
 		Semantic: semantic,

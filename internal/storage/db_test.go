@@ -3,11 +3,12 @@ package storage
 import (
 	"fmt"
 	"log"
+	"log/slog"
 	"testing"
 )
 
 func TestDB(t *testing.T) {
-	d, err := Open("demo-vector")
+	d, err := Open("demo-vector", slog.Default())
 	if err != nil {
 		log.Fatal(err)
 	}

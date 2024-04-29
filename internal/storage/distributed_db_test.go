@@ -3,6 +3,7 @@ package storage
 import (
 	"fmt"
 	"io/ioutil"
+	"log/slog"
 	"os"
 	"testing"
 	"time"
@@ -38,7 +39,7 @@ func TestDistributedDB(t *testing.T) {
 			config.Raft.Bootstrap = true
 		}
 
-		l, err := NewDistributedDB(dataDir, config)
+		l, err := NewDistributedDB(dataDir, config, slog.Default())
 		require.NoError(t, err)
 
 		if i != 0 {
