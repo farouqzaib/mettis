@@ -26,9 +26,9 @@ var (
 )
 
 func main() {
-	flag.StringVar(&httpAddr, "httpAddr", "", "address for http servic")
-	flag.StringVar(&joinAddr, "joinAddr", "", "address of primary node to join")
-	flag.StringVar(&nodeId, "nodeId", "", "node ID")
+	flag.StringVar(&httpAddr, "httpAddr", "", "address of HTTP API service")
+	flag.StringVar(&joinAddr, "joinAddr", "", "HTTP API service address of primary node to join")
+	flag.StringVar(&nodeId, "nodeId", "", "unique identifier for node")
 	flag.StringVar(&raftAddr, "raftAddr", "", "raft address for node")
 	flag.Parse()
 

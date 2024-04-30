@@ -32,6 +32,12 @@ export EmbeddingHost="http://127.0.0.1:8000/embeddings"
 ```
 
 Proceed to start instance(s) of the vector db
+##### flags
+- httpAddr: address of http API for DB
+- joinAddr: address of primary node to join
+- nodeId: unique identifier for node
+- raftAddr: raft address for node
+
 ##### Run single-node
 ```bash
 go run cmd/server/main.go -httpAddr 127.0.0.1:8111 -nodeId 0 -raftAddr 127.0.0.1:9000
