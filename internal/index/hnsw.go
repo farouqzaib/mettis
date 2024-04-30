@@ -217,7 +217,7 @@ func (hnsw *HNSW) insert(vec VectorNode) {
 			nearestNeighbours := hnsw.searchLayer(hnsw.Index[i], startingNode, vec, hnsw.EFC)
 
 			m := int(math.Min(float64(hnsw.M), float64(len(nearestNeighbours))))
-			if len(nearestNeighbours) > 2 {
+			if len(nearestNeighbours) > hnsw.M {
 				nearestNeighbours = nearestNeighbours[len(nearestNeighbours)-m-1:]
 			}
 			for _, neighbour := range nearestNeighbours {
