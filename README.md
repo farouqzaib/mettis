@@ -33,8 +33,8 @@ export EmbeddingHost="http://127.0.0.1:8000/embeddings"
 
 Proceed to start instance(s) of the vector db
 ##### flags
-- httpAddr: address of http API for DB
-- joinAddr: address of primary node to join
+- httpAddr: address of HTTP API service
+- joinAddr: HTTP API service address of primary node to join
 - nodeId: unique identifier for node
 - raftAddr: raft address for node
 
