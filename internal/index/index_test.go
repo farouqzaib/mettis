@@ -14,7 +14,7 @@ func TestInvertedIndexIndex(t *testing.T) {
 	index.Index(2, "I have come to save Gotham!")
 	index.Index(3, "What is your name")
 
-	expected := DocumentOffset{DocumentID: 1, Offset: 2}
+	expected := Position{DocumentID: 1, Offset: 2}
 
 	sk := index.PostingsList["name"]
 	found, err := sk.Find(expected)
@@ -31,9 +31,9 @@ func TestInvertedIndexPrevious(t *testing.T) {
 	index.Index(2, "I have come to save Gotham!")
 	index.Index(3, "What is your name")
 
-	expected := DocumentOffset{DocumentID: 1, Offset: 2}
+	expected := Position{DocumentID: 1, Offset: 2}
 
-	got, _ := index.Previous("name", DocumentOffset{DocumentID: 1, Offset: 3})
+	got, _ := index.Previous("name", Position{DocumentID: 1, Offset: 3})
 
 	if expected.DocumentID != got.DocumentID {
 		t.Fatalf("expected %v, document offset, got %v", expected, got)
@@ -47,9 +47,9 @@ func TestInvertedIndexNext(t *testing.T) {
 	index.Index(2, "I have come to save Gotham!")
 	index.Index(3, "What is your name")
 
-	expected := DocumentOffset{DocumentID: EOF, Offset: EOF}
+	expected := Position{DocumentID: EOF, Offset: EOF}
 
-	got, _ := index.Next("my", DocumentOffset{DocumentID: 1, Offset: 1})
+	got, _ := index.Next("my", Position{DocumentID: 1, Offset: 1})
 
 	fmt.Println(got)
 	if expected.DocumentID != got.DocumentID && expected.Offset != got.Offset {
@@ -65,9 +65,9 @@ func TestInvertedIndexNextPhrase(t *testing.T) {
 	index.Index(2, "I have come to save Gotham!")
 	index.Index(3, "What is your name")
 
-	expected := []DocumentOffset{{DocumentID: 3, Offset: 2}, {DocumentID: 3, Offset: 3}}
+	expected := []Position{{DocumentID: 3, Offset: 2}, {DocumentID: 3, Offset: 3}}
 
-	got := index.NextPhrase("your name", DocumentOffset{DocumentID: BOF, Offset: BOF})
+	got := index.NextPhrase("your name", Position{DocumentID: BOF, Offset: BOF})
 
 	fmt.Println(got)
 	if len(got) != 2 {
@@ -86,15 +86,15 @@ func TestInvertedIndexNextCover(t *testing.T) {
 	index.Index(2, "I have come to save Gotham!")
 	index.Index(3, "What is your name")
 
-	expected := []DocumentOffset{{DocumentID: 1, Offset: 1}, {DocumentID: 1, Offset: 2}}
+	expected := []Position{{DocumentID: 1, Offset: 1}, {DocumentID: 1, Offset: 2}}
 
 	tokens := analyzer.Analyze("my batman")
-	got := index.NextCover(tokens, DocumentOffset{DocumentID: BOF, Offset: BOF})
+	got := index.NextCover(tokens, Position{DocumentID: BOF, Offset: BOF})
 
 	b := index.Encode()
 	i := index.Decode(b)
 
-	got = i.NextCover(tokens, DocumentOffset{DocumentID: BOF, Offset: BOF})
+	got = i.NextCover(tokens, Position{DocumentID: BOF, Offset: BOF})
 
 	fmt.Println(got)
 	if len(got) != 2 {
@@ -114,7 +114,7 @@ func TestInvertedIndexRankProximity(t *testing.T) {
 	index.Index(3, "What is your name")
 	index.Index(4, "What is my your name")
 
-	expected := []DocumentOffset{{DocumentID: 3, Offset: 2}, {DocumentID: 3, Offset: 3}}
+	expected := []Position{{DocumentID: 3, Offset: 2}, {DocumentID: 3, Offset: 3}}
 
 	got := index.RankProximity("save my gotham", 10)
 

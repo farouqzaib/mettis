@@ -175,7 +175,7 @@ func (hnsw *HNSW) Search(query VectorNode, ef int) []Match {
 			for _, neighbour := range neighbours {
 				result = append(result,
 					Match{
-						Offsets: []DocumentOffset{{DocumentID: float64(hnsw.Index[len(hnsw.Index)-1].Elements[neighbour.Entry].ID)}},
+						Offsets: []Position{{DocumentID: float64(hnsw.Index[len(hnsw.Index)-1].Elements[neighbour.Entry].ID)}},
 						Score:   neighbour.Distance,
 					},
 				)

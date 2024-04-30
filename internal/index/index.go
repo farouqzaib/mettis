@@ -34,38 +34,38 @@ func (i *InvertedIndex) Index(docID int, document string) {
 		}
 
 		sk := i.PostingsList[word]
-		sk.Insert(DocumentOffset{DocumentID: float64(docID), Offset: float64(j)})
+		sk.Insert(Position{DocumentID: float64(docID), Offset: float64(j)})
 		i.PostingsList[word] = sk
 	}
 }
 
-func (i *InvertedIndex) First(token string) (DocumentOffset, error) {
+func (i *InvertedIndex) First(token string) (Position, error) {
 	_, ok := i.PostingsList[token]
 
 	if ok {
 		sk := i.PostingsList[token]
 		return sk.Head.Tower[0].Key, nil
 	}
-	return DocumentOffset{DocumentID: EOF, Offset: EOF}, errors.New("no list exists for token")
+	return Position{DocumentID: EOF, Offset: EOF}, errors.New("no list exists for token")
 }
 
-func (i *InvertedIndex) Last(token string) (DocumentOffset, error) {
+func (i *InvertedIndex) Last(token string) (Position, error) {
 	_, ok := i.PostingsList[token]
 
 	if ok {
 		sk := i.PostingsList[token]
 		return sk.Last(), nil
 	}
-	return DocumentOffset{DocumentID: EOF, Offset: EOF}, errors.New("no list exists for token")
+	return Position{DocumentID: EOF, Offset: EOF}, errors.New("no list exists for token")
 }
 
-func (i *InvertedIndex) Next(token string, offset DocumentOffset) (DocumentOffset, error) {
+func (i *InvertedIndex) Next(token string, offset Position) (Position, error) {
 	if offset.Offset == BOF {
 		return i.First(token)
 	}
 
 	if offset.Offset == EOF {
-		return DocumentOffset{DocumentID: EOF, Offset: EOF}, nil
+		return Position{DocumentID: EOF, Offset: EOF}, nil
 	}
 
 	_, ok := i.PostingsList[token]
@@ -77,16 +77,16 @@ func (i *InvertedIndex) Next(token string, offset DocumentOffset) (DocumentOffse
 		return key, nil
 	}
 
-	return DocumentOffset{DocumentID: EOF, Offset: EOF}, errors.New("no list exists for token")
+	return Position{DocumentID: EOF, Offset: EOF}, errors.New("no list exists for token")
 }
 
-func (i *InvertedIndex) Previous(token string, offset DocumentOffset) (DocumentOffset, error) {
+func (i *InvertedIndex) Previous(token string, offset Position) (Position, error) {
 	if offset.Offset == EOF {
 		return i.Last(token)
 	}
 
 	if offset.Offset == BOF {
-		return DocumentOffset{DocumentID: BOF, Offset: BOF}, nil
+		return Position{DocumentID: BOF, Offset: BOF}, nil
 	}
 
 	_, ok := i.PostingsList[token]
@@ -97,10 +97,10 @@ func (i *InvertedIndex) Previous(token string, offset DocumentOffset) (DocumentO
 		return key, nil
 	}
 
-	return DocumentOffset{DocumentID: BOF, Offset: BOF}, errors.New("no list exists for token")
+	return Position{DocumentID: BOF, Offset: BOF}, errors.New("no list exists for token")
 }
 
-func (i *InvertedIndex) NextPhrase(query string, offset DocumentOffset) []DocumentOffset {
+func (i *InvertedIndex) NextPhrase(query string, offset Position) []Position {
 	v := offset
 
 	terms := strings.Fields(query)
@@ -110,7 +110,7 @@ func (i *InvertedIndex) NextPhrase(query string, offset DocumentOffset) []Docume
 	}
 
 	if v.Offset == EOF {
-		return []DocumentOffset{{DocumentID: EOF, Offset: EOF}, {DocumentID: EOF, Offset: EOF}}
+		return []Position{{DocumentID: EOF, Offset: EOF}, {DocumentID: EOF, Offset: EOF}}
 	}
 
 	u := v
@@ -121,16 +121,16 @@ func (i *InvertedIndex) NextPhrase(query string, offset DocumentOffset) []Docume
 	}
 
 	if (v.DocumentID == u.DocumentID) && (v.GetOffset()-u.GetOffset() == len(strings.Fields(query))-1) {
-		return []DocumentOffset{u, v}
+		return []Position{u, v}
 	}
 
 	return i.NextPhrase(query, u)
 }
 
-func (i *InvertedIndex) FindAllPhrases(query string, offset DocumentOffset) [][]DocumentOffset {
-	u := DocumentOffset{DocumentID: BOF, Offset: BOF}
+func (i *InvertedIndex) FindAllPhrases(query string, offset Position) [][]Position {
+	u := Position{DocumentID: BOF, Offset: BOF}
 
-	positions := [][]DocumentOffset{}
+	positions := [][]Position{}
 
 	for u.DocumentID != EOF {
 		offsets := i.NextPhrase(query, u)
@@ -144,7 +144,7 @@ func (i *InvertedIndex) FindAllPhrases(query string, offset DocumentOffset) [][]
 	return positions
 }
 
-func (i *InvertedIndex) NextCover(tokens []string, offset DocumentOffset) []DocumentOffset {
+func (i *InvertedIndex) NextCover(tokens []string, offset Position) []Position {
 	v := offset
 
 	for j, word := range tokens {
@@ -167,13 +167,13 @@ func (i *InvertedIndex) NextCover(tokens []string, offset DocumentOffset) []Docu
 	}
 
 	if v.DocumentID == EOF {
-		return []DocumentOffset{{DocumentID: EOF, Offset: EOF}, {DocumentID: EOF, Offset: EOF}}
+		return []Position{{DocumentID: EOF, Offset: EOF}, {DocumentID: EOF, Offset: EOF}}
 	}
 
-	u := DocumentOffset{DocumentID: BOF, Offset: BOF}
+	u := Position{DocumentID: BOF, Offset: BOF}
 
 	for j, word := range tokens {
-		localMin, _ := i.Previous(word, DocumentOffset{DocumentID: v.DocumentID, Offset: v.Offset + 1})
+		localMin, _ := i.Previous(word, Position{DocumentID: v.DocumentID, Offset: v.Offset + 1})
 
 		if j == 0 {
 			u = localMin
@@ -186,14 +186,14 @@ func (i *InvertedIndex) NextCover(tokens []string, offset DocumentOffset) []Docu
 	}
 
 	if u.DocumentID == v.DocumentID {
-		return []DocumentOffset{u, v}
+		return []Position{u, v}
 	}
 
 	return i.NextCover(tokens, u)
 }
 
 type Match struct {
-	Offsets []DocumentOffset
+	Offsets []Position
 	Score   float64
 }
 
@@ -205,16 +205,16 @@ func (i *InvertedIndex) RankProximity(query string, k int) []Match {
 		return []Match{}
 	}
 
-	offsets := i.NextCover(tokens, DocumentOffset{DocumentID: BOF, Offset: BOF})
+	offsets := i.NextCover(tokens, Position{DocumentID: BOF, Offset: BOF})
 	u, v := offsets[0], offsets[1]
-	candidate := []DocumentOffset{u, v}
+	candidate := []Position{u, v}
 	score := 0.0
 	results := []Match{}
 
 	for u.DocumentID < EOF {
 		if candidate[0].DocumentID < u.DocumentID {
 			results = append(results, Match{Offsets: candidate, Score: score})
-			candidate = []DocumentOffset{u, v}
+			candidate = []Position{u, v}
 			score = 0
 		}
 
@@ -370,7 +370,7 @@ func (i *InvertedIndex) Decode(b []byte) InvertedIndex {
 			node := binary.LittleEndian.Uint32(b[offset : offset+4])
 
 			if i%2 == 0 {
-				positions = append(positions, &Node{Key: DocumentOffset{DocumentID: float64(node)}})
+				positions = append(positions, &Node{Key: Position{DocumentID: float64(node)}})
 			} else {
 				positions[len(positions)-1].Key.Offset = float64(node)
 				positionMap[counter] = positions[len(positions)-1]

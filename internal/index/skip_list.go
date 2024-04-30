@@ -14,24 +14,25 @@ const (
 var EOF = math.Inf(1)
 var BOF = math.Inf(-1)
 
-type DocumentOffset struct {
+// these are floats because of the sentinels above
+type Position struct {
 	DocumentID float64
 	Offset     float64
 }
 
-func (d *DocumentOffset) GetDocumentID() int {
+func (d *Position) GetDocumentID() int {
 	return int(d.DocumentID)
 }
 
-func (d *DocumentOffset) GetOffset() int {
+func (d *Position) GetOffset() int {
 	return int(d.Offset)
 }
 
-var BOFDocument = DocumentOffset{DocumentID: BOF, Offset: BOF}
-var EOFDocument = DocumentOffset{DocumentID: EOF, Offset: EOF}
+var BOFDocument = Position{DocumentID: BOF, Offset: BOF}
+var EOFDocument = Position{DocumentID: EOF, Offset: EOF}
 
 type Node struct {
-	Key   DocumentOffset
+	Key   Position
 	Tower [MaxHeight]*Node
 }
 
@@ -47,7 +48,7 @@ func NewSkipList() *SkipList {
 	}
 }
 
-func (s *SkipList) Search(key DocumentOffset) (*Node, [MaxHeight]*Node) {
+func (s *SkipList) Search(key Position) (*Node, [MaxHeight]*Node) {
 	var next *Node
 	var journey [MaxHeight]*Node
 
@@ -104,30 +105,30 @@ func (s *SkipList) Search(key DocumentOffset) (*Node, [MaxHeight]*Node) {
 	return nil, journey
 }
 
-func (s *SkipList) Find(key DocumentOffset) (DocumentOffset, error) {
+func (s *SkipList) Find(key Position) (Position, error) {
 	found, _ := s.Search(key)
 
 	if found == nil {
-		return DocumentOffset{DocumentID: EOF, Offset: EOF}, errors.New("key not found")
+		return Position{DocumentID: EOF, Offset: EOF}, errors.New("key not found")
 	}
 	return found.Key, nil
 }
 
-func (s *SkipList) FindLessThan(key DocumentOffset) (DocumentOffset, error) {
+func (s *SkipList) FindLessThan(key Position) (Position, error) {
 	_, journey := s.Search(key)
 
 	if journey[0] == nil {
-		return DocumentOffset{DocumentID: BOF, Offset: BOF}, errors.New("key not found")
+		return Position{DocumentID: BOF, Offset: BOF}, errors.New("key not found")
 	}
 
 	if journey[0] == s.Head {
-		return DocumentOffset{DocumentID: BOF, Offset: BOF}, errors.New("no element found")
+		return Position{DocumentID: BOF, Offset: BOF}, errors.New("no element found")
 	}
 
 	return journey[0].Key, nil
 }
 
-func (s *SkipList) FindGreaterThan(key DocumentOffset) (DocumentOffset, error) {
+func (s *SkipList) FindGreaterThan(key Position) (Position, error) {
 	found, journey := s.Search(key)
 
 	//if the key exists then move the found key forward
@@ -135,14 +136,9 @@ func (s *SkipList) FindGreaterThan(key DocumentOffset) (DocumentOffset, error) {
 		if found.Tower[0] != nil {
 			return found.Tower[0].Key, nil
 		} else {
-			return DocumentOffset{DocumentID: EOF, Offset: EOF}, errors.New("no element found")
+			return Position{DocumentID: EOF, Offset: EOF}, errors.New("no element found")
 		}
 	}
-
-	//maybe check for head first?
-	// if journey[0] == s.Head {
-	// 	return DocumentOffset{DocumentID: EOF, Offset: EOF}, errors.New("no element found")
-	// }
 
 	//move the previous key forward since key does not exist
 	if journey[0] != nil && journey[0].Tower[0] != nil {
@@ -150,19 +146,19 @@ func (s *SkipList) FindGreaterThan(key DocumentOffset) (DocumentOffset, error) {
 		return journey[0].Tower[0].Key, nil
 	}
 
-	return DocumentOffset{DocumentID: EOF, Offset: EOF}, errors.New("no element found")
+	return Position{DocumentID: EOF, Offset: EOF}, errors.New("no element found")
 }
 
-func (s *SkipList) Insert(key DocumentOffset) {
+func (s *SkipList) Insert(key Position) {
 	found, journey := s.Search(key)
 
 	if found != nil {
-		found.Key = DocumentOffset{DocumentID: key.DocumentID, Offset: key.Offset}
+		found.Key = Position{DocumentID: key.DocumentID, Offset: key.Offset}
 		return
 	}
 
 	height := s.randomHeight()
-	node := &Node{Key: DocumentOffset{DocumentID: key.DocumentID, Offset: key.Offset}}
+	node := &Node{Key: Position{DocumentID: key.DocumentID, Offset: key.Offset}}
 
 	for level := 0; level < height; level++ {
 		prev := journey[level]
@@ -181,11 +177,11 @@ func (s *SkipList) Insert(key DocumentOffset) {
 
 }
 
-func (s *SkipList) Delete(key DocumentOffset) bool {
+func (s *SkipList) Delete(key Position) bool {
 	found, journey := s.Search(key)
 
 	if found != nil {
-		found.Key = DocumentOffset{DocumentID: -1, Offset: -1}
+		found.Key = Position{DocumentID: -1, Offset: -1}
 		return false
 	}
 
@@ -203,7 +199,7 @@ func (s *SkipList) Delete(key DocumentOffset) bool {
 	return true
 }
 
-func (s *SkipList) Last() DocumentOffset {
+func (s *SkipList) Last() Position {
 	var next *Node
 	prev := s.Head
 
@@ -243,11 +239,11 @@ func (i *Iterator) HasNext() bool {
 	return i.current.Tower[0] != nil
 }
 
-func (i *Iterator) Next() DocumentOffset {
+func (i *Iterator) Next() Position {
 	i.current = i.current.Tower[0]
 
 	if i.current == nil {
-		return DocumentOffset{DocumentID: EOF, Offset: EOF}
+		return Position{DocumentID: EOF, Offset: EOF}
 	}
 
 	return i.current.Key
