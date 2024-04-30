@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"math"
 	"strings"
+	"sync"
 
 	"github.com/farouqzaib/fast-search/internal/analyzer"
 )
@@ -23,20 +24,79 @@ func NewInvertedIndex() *InvertedIndex {
 	}
 }
 
+func (i *InvertedIndex) ConcurrentIndex(docID int, tokens []string) {
+	//map tokens in document after analyzer runs
+	//while list of tokens not empty, have workers do some work
+	//each worker returns a skiplist
+	//skiplist is added to index
+	var tokenOffsetSync sync.Map
+
+	tokenOffset := map[string][]int{}
+
+	for j, token := range tokens {
+		_, ok := tokenOffset[token]
+		if ok {
+			tokenOffset[token] = append(tokenOffset[token], j)
+		} else {
+			tokenOffset[token] = []int{j}
+		}
+	}
+
+	for k, v := range tokenOffset {
+		tokenOffsetSync.Store(k, v)
+	}
+
+	tokensCh := make(chan string, len(tokenOffset))
+	resultCh := make(chan map[string]SkipList, len(tokenOffset))
+
+	for w := 0; w < 5; w++ {
+		//do indexing shit
+		go func(tokenCh chan string) {
+			for token := range tokenCh {
+				m, _ := tokenOffsetSync.Load(token)
+				sk := *NewSkipList()
+				for _, t := range m.([]int) {
+
+					sk.Insert(Position{DocumentID: float64(docID), Offset: float64(t)})
+				}
+
+				resultCh <- map[string]SkipList{token: sk}
+			}
+		}(tokensCh)
+	}
+
+	for token, _ := range tokenOffset {
+		//send tokens to indexer
+		tokensCh <- token
+	}
+
+	for k := 0; k < len(tokenOffset); k++ {
+		result := <-resultCh
+		for k, v := range result {
+			i.PostingsList[k] = v
+		}
+	}
+
+	// fmt.Printf("%+v", i.PostingsList)
+}
+
 func (i *InvertedIndex) Index(docID int, document string) {
 	slog.Info("index: indexing documents", slog.Int("docID", docID))
 	tokens := analyzer.Analyze(document)
-	for j, word := range tokens {
-		_, ok := i.PostingsList[word]
 
-		if !ok {
-			i.PostingsList[word] = *NewSkipList()
-		}
+	i.ConcurrentIndex(docID, tokens)
 
-		sk := i.PostingsList[word]
-		sk.Insert(Position{DocumentID: float64(docID), Offset: float64(j)})
-		i.PostingsList[word] = sk
-	}
+	// for j, word := range tokens {
+	// 	_, ok := i.PostingsList[word]
+
+	// 	if !ok {
+	// 		i.PostingsList[word] = *NewSkipList()
+	// 	}
+
+	// 	sk := i.PostingsList[word]
+	// 	sk.Insert(Position{DocumentID: float64(docID), Offset: float64(j)})
+	// 	i.PostingsList[word] = sk
+	// }
 }
 
 func (i *InvertedIndex) First(token string) (Position, error) {
