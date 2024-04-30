@@ -2,14 +2,13 @@ package index
 
 import (
 	"fmt"
-	"log/slog"
 	"testing"
 
 	"github.com/farouqzaib/fast-search/internal/analyzer"
 )
 
 func TestInvertedIndexIndex(t *testing.T) {
-	index := NewInvertedIndex(slog.Default())
+	index := NewInvertedIndex()
 
 	index.Index(1, "hello, my name is BATMAN!")
 	index.Index(2, "I have come to save Gotham!")
@@ -26,7 +25,7 @@ func TestInvertedIndexIndex(t *testing.T) {
 }
 
 func TestInvertedIndexPrevious(t *testing.T) {
-	index := NewInvertedIndex(slog.Default())
+	index := NewInvertedIndex()
 
 	index.Index(1, "hello, my name is BATMAN!")
 	index.Index(2, "I have come to save Gotham!")
@@ -42,7 +41,7 @@ func TestInvertedIndexPrevious(t *testing.T) {
 }
 
 func TestInvertedIndexNext(t *testing.T) {
-	index := NewInvertedIndex(slog.Default())
+	index := NewInvertedIndex()
 
 	index.Index(1, "hello, my name is BATMAN!")
 	index.Index(2, "I have come to save Gotham!")
@@ -60,7 +59,7 @@ func TestInvertedIndexNext(t *testing.T) {
 }
 
 func TestInvertedIndexNextPhrase(t *testing.T) {
-	index := NewInvertedIndex(slog.Default())
+	index := NewInvertedIndex()
 
 	index.Index(1, "hello, my name is BATMAN!")
 	index.Index(2, "I have come to save Gotham!")
@@ -81,7 +80,7 @@ func TestInvertedIndexNextPhrase(t *testing.T) {
 }
 
 func TestInvertedIndexNextCover(t *testing.T) {
-	index := NewInvertedIndex(slog.Default())
+	index := NewInvertedIndex()
 
 	index.Index(1, "hello, my name is BATMAN!")
 	index.Index(2, "I have come to save Gotham!")
@@ -108,7 +107,7 @@ func TestInvertedIndexNextCover(t *testing.T) {
 }
 
 func TestInvertedIndexRankProximity(t *testing.T) {
-	index := NewInvertedIndex(slog.Default())
+	index := NewInvertedIndex()
 
 	index.Index(1, "hello, my name is BATMAN!")
 	index.Index(2, "I have come to save Gotham!")

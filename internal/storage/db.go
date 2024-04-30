@@ -106,7 +106,7 @@ func (d *IndexStorage) Get(query string, k int) []index.Match {
 	for j := len(d.segments) - 1; j >= 0; j-- {
 		go func(j int) {
 
-			h := index.NewHybridSearch(&d.inMemorySegments[j], &d.inMemoryVectorSegments[j], d.logger)
+			h := index.NewHybridSearch(&d.inMemorySegments[j], &d.inMemoryVectorSegments[j], d.logger, index.GetEmbedding)
 
 			val := h.Search(query, k)
 			matchesCh <- val

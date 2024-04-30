@@ -26,20 +26,22 @@ type IndexResults struct {
 }
 
 type HybridSearch struct {
-	FTS      *InvertedIndex
-	Semantic *HNSW
-	logger   *slog.Logger
+	FTS          *InvertedIndex
+	Semantic     *HNSW
+	logger       *slog.Logger
+	getEmbedding getEmbeddingFn
 }
 
-func NewHybridSearch(fts *InvertedIndex, semantic *HNSW, logger *slog.Logger) *HybridSearch {
+func NewHybridSearch(fts *InvertedIndex, semantic *HNSW, logger *slog.Logger, getEmbedding getEmbeddingFn) *HybridSearch {
 	return &HybridSearch{
-		FTS:      fts,
-		Semantic: semantic,
+		FTS:          fts,
+		Semantic:     semantic,
+		getEmbedding: getEmbedding,
 	}
 }
 
 func (hs *HybridSearch) Index(docId int, document string) error {
-	vector, err := getEmbedding(document)
+	vector, err := hs.getEmbedding(document)
 	if err != nil {
 		return err
 	}
@@ -52,7 +54,7 @@ func (hs *HybridSearch) Index(docId int, document string) error {
 func (hs *HybridSearch) Search(query string, k int) []Match {
 	ftsResult := hs.FTS.RankProximity(query, k)
 
-	vector, err := getEmbedding(query)
+	vector, err := hs.getEmbedding(query)
 	if err != nil {
 		panic(err)
 	}
@@ -86,7 +88,9 @@ func mergeResult(results IndexResults, mergeWeight float32, k int) []Match {
 	return mergedResults[:k]
 }
 
-func getEmbedding(text string) ([]float64, error) {
+type getEmbeddingFn func(text string) ([]float64, error)
+
+func GetEmbedding(text string) ([]float64, error) {
 	embeddingHost := os.Getenv("EmbeddingHost")
 	postBody, _ := json.Marshal(map[string]string{
 		"text": text,

@@ -18,7 +18,7 @@ type Memtable struct {
 
 func NewMemtable(sizeLimit int, logger *slog.Logger) *Memtable {
 	m := &Memtable{
-		inMemoryInvertedIndex: index.NewInvertedIndex(logger),
+		inMemoryInvertedIndex: index.NewInvertedIndex(),
 		inMemoryVectorIndex:   index.NewHNSW(5, 0.62, 8, 16),
 		sizeLimit:             sizeLimit,
 		logger:                logger,
@@ -38,7 +38,7 @@ func (m *Memtable) HasRoomForWrite(data []byte) bool {
 }
 
 func (m *Memtable) Insert(docID int, document string) {
-	h := index.NewHybridSearch(m.inMemoryInvertedIndex, m.inMemoryVectorIndex, m.logger)
+	h := index.NewHybridSearch(m.inMemoryInvertedIndex, m.inMemoryVectorIndex, m.logger, index.GetEmbedding)
 	err := h.Index(docID, document)
 
 	if err != nil {
@@ -52,7 +52,7 @@ func (m *Memtable) Insert(docID int, document string) {
 }
 
 func (m *Memtable) Get(query string, k int) []index.Match {
-	h := index.NewHybridSearch(m.inMemoryInvertedIndex, m.inMemoryVectorIndex, m.logger)
+	h := index.NewHybridSearch(m.inMemoryInvertedIndex, m.inMemoryVectorIndex, m.logger, index.GetEmbedding)
 
 	return h.Search(query, k)
 }

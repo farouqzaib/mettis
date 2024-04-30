@@ -2,7 +2,6 @@ package index
 
 import (
 	"errors"
-	"log/slog"
 	"math"
 	"math/rand"
 	"time"
@@ -39,14 +38,12 @@ type Node struct {
 type SkipList struct {
 	Head   *Node
 	Height int
-	logger *slog.Logger
 }
 
-func NewSkipList(logger *slog.Logger) *SkipList {
+func NewSkipList() *SkipList {
 	return &SkipList{
 		Head:   &Node{},
 		Height: 1,
-		logger: logger,
 	}
 }
 
@@ -80,9 +77,6 @@ func (s *SkipList) Search(key DocumentOffset) (*Node, [MaxHeight]*Node) {
 
 			if key.DocumentID == next.Key.DocumentID && key.Offset > next.Key.Offset {
 				//advance
-				//modify the lowest level of journey prematurely?
-				// level = 0
-				// journey[0] = next
 			}
 
 			if key.DocumentID > next.Key.DocumentID && key.Offset < next.Key.Offset {
