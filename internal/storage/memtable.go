@@ -37,7 +37,7 @@ func (m *Memtable) HasRoomForWrite(data []byte) bool {
 	return sizeNeeded <= sizeAvailable
 }
 
-func (m *Memtable) Insert(docID int, document string) {
+func (m *Memtable) Index(docID int, document string) {
 	h := index.NewHybridSearch(m.inMemoryInvertedIndex, m.inMemoryVectorIndex, m.logger, index.GetEmbedding)
 	err := h.Index(docID, document)
 
@@ -45,10 +45,22 @@ func (m *Memtable) Insert(docID int, document string) {
 		panic(err)
 	}
 
-	// l := len(m.inMemoryInvertedIndex.Encode())
-	// l += len(m.inMemoryVectorIndex.Encode())
+	m.sizeUsed = len([]byte(document))
+}
 
-	// m.sizeUsed = l
+func (m *Memtable) BulkIndex(docIDs []float64, documents []string) {
+	h := index.NewHybridSearch(m.inMemoryInvertedIndex, m.inMemoryVectorIndex, m.logger, index.GetEmbedding)
+	err := h.BulkIndex(docIDs, documents)
+
+	if err != nil {
+		panic(err)
+	}
+
+	l := 0
+	for _, document := range documents {
+		l += len([]byte(document))
+	}
+	m.sizeUsed = l
 }
 
 func (m *Memtable) Get(query string, k int) []index.Match {

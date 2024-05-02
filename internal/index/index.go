@@ -39,6 +39,7 @@ func (i *InvertedIndex) ConcurrentIndex(docID int, tokens []string) {
 	tokensCh := make(chan map[string][]int, len(tokenOffsets))
 	resultCh := make(chan map[string]SkipList, len(tokenOffsets))
 
+	//TODO: make number of workers configurable
 	for w := 0; w < runtime.GOMAXPROCS(0); w++ {
 		go func(tokenCh chan map[string][]int) {
 			for tokenOffset := range tokenCh {

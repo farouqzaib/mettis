@@ -230,12 +230,13 @@ func (s *httpServer) handleBulkIndex(w http.ResponseWriter, r *http.Request) {
 	err := decoder.Decode(&req)
 
 	if err != nil {
-		slog.Error("http: indexing", slog.String("error", err.Error()))
+		slog.Error("http: bulk indexing", slog.String("error", err.Error()))
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	var docId int
+	docIds := []int{}
+	documents := []string{}
 	err = s.metadataStorage.Update(func(tx *bbolt.Tx) error {
 		b := tx.Bucket([]byte(storage.DocumentMetadataBucket))
 		if b == nil {
@@ -244,36 +245,36 @@ func (s *httpServer) handleBulkIndex(w http.ResponseWriter, r *http.Request) {
 
 		for i, document := range req.Documents {
 			id, _ := b.NextSequence()
-			docId = int(id)
-			err := b.Put(itob(docId), []byte(document.Text))
+			docIds = append(docIds, int(id))
+			err := b.Put(itob(docIds[i]), []byte(document.Text))
 
 			if err != nil {
 				slog.Error("http: bulk indexing", slog.String("error", err.Error()))
 				return err
 			}
 
-			req.IDs[i] = docId
+			documents = append(documents, req.Documents[i].Text)
 		}
 
 		return nil
 	})
 
 	if err != nil {
-		slog.Error("http: indexing", slog.String("error", err.Error()))
+		slog.Error("http: bulk indexing", slog.String("error", err.Error()))
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 
 	//do bulk index using req
-	// err = s.index.BulkIndex(req.IDs, req.Documents)
+	err = s.index.BulkIndex(docIds, documents)
 	if err != nil {
-		slog.Error("http: indexing", slog.String("error", err.Error()))
+		slog.Error("http: bulk indexing", slog.String("error", err.Error()))
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	err = json.NewEncoder(w).Encode(OkResponse{Status: "OK!"})
 	if err != nil {
-		slog.Error("http: indexing", slog.String("error", err.Error()))
+		slog.Error("http: bulk indexing", slog.String("error", err.Error()))
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

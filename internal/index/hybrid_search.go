@@ -51,6 +51,44 @@ func (hs *HybridSearch) Index(docId int, document string) error {
 
 	return nil
 }
+
+func (hs *HybridSearch) BulkIndex(docIds []float64, documents []string) error {
+	jobsCh := make(chan map[int]string, len(docIds))
+	resultsCh := make(chan int, len(docIds))
+
+	//TODO: make number of workers configurable
+	for worker := 0; worker < 8; worker++ {
+		slog.Info("bulk indexing: worker", slog.Int("worker", worker))
+		go func(jobs chan map[int]string) {
+			for job := range jobs {
+				for docId, document := range job {
+					vector, err := hs.getEmbedding(document)
+					if err != nil {
+						slog.Error("bulk indexing error:", err)
+						panic(err)
+					}
+
+					hs.FTS.Index(docId, document)
+					hs.Semantic.Create([]VectorNode{{Vector: vector, ID: docId}})
+
+					resultsCh <- 1
+				}
+			}
+		}(jobsCh)
+	}
+
+	//send tasks to goroutines
+	for i := 0; i < len(docIds); i++ {
+		jobsCh <- map[int]string{int(docIds[i]): documents[i]}
+	}
+
+	//process results
+	for k := 0; k < len(docIds); k++ {
+		<-resultsCh
+	}
+	return nil
+}
+
 func (hs *HybridSearch) Search(query string, k int) []Match {
 	ftsResult := hs.FTS.RankProximity(query, k)
 

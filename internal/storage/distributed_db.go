@@ -173,6 +173,28 @@ func (d *DistributedDB) Index(docId int, document string) error {
 }
 
 func (d *DistributedDB) BulkIndex(docIds []int, documents []string) error {
+	c := &command{
+		Op:   "bulkIndex",
+		Data: map[string]interface{}{"docIds": docIds, "documents": documents},
+	}
+
+	b, err := json.Marshal(c)
+	if err != nil {
+		return err
+	}
+
+	timeout := 10 * time.Second
+	future := d.raft.Apply(b, timeout)
+
+	if future.Error() != nil {
+		return future.Error()
+	}
+
+	res := future.Response()
+	if err, ok := res.(error); ok {
+		return err
+	}
+
 	return nil
 }
 
@@ -256,9 +278,33 @@ func (f *fsm) Apply(b *raft.Log) interface{} {
 	case "search":
 		query := c.Data["query"].(string)
 		return f.applySearch(query)
+	case "bulkIndex":
+		rawDocIds := c.Data["docIds"].([]interface{})
+
+		docIds := []float64{}
+
+		for _, d := range rawDocIds {
+			docIds = append(docIds, d.(float64))
+		}
+
+		documents := []string{}
+		rawDocuments := c.Data["documents"].([]interface{})
+		for _, d := range rawDocuments {
+			documents = append(documents, d.(string))
+		}
+		return f.applyBulkIndex(docIds, documents)
 	default:
 		panic(fmt.Sprintf("unrecognized command op: %s", c.Op))
 	}
+}
+
+func (f *fsm) applyBulkIndex(docIds []float64, documents []string) interface{} {
+	err := f.db.BulkIndex(docIds, documents)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (f *fsm) applyIndex(docId int, document string) interface{} {
