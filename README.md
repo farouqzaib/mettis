@@ -7,7 +7,6 @@ xdb: Distributed lite vector database built from *scratch.
 - (naive) weighted full-text + semantic search hybrid
 - in-memory serving + disk persistence
 - fault-tolerance with segment replication using Raft
-- buggy, very buggy
 
 #### What it's not:
 - production-ready (code is pretty sus right now)
@@ -87,6 +86,8 @@ go run cmd/server/main.go -httpAddr 127.0.0.1:8113 -nodeId 2 -raftAddr 127.0.0.1
     - Segment compaction
 - Replication
     - Snapshot working?
+- Deployment
+    - Containerisation
 - Code quality
     - Penance for all the atrocities I committed.
 
