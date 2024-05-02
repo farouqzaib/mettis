@@ -18,6 +18,7 @@ func NewHttpServer(index *storage.DistributedDB, metadataStorage *bbolt.DB, logg
 	r.HandleFunc("/search", srv.handleSearch).Methods("GET")
 	r.HandleFunc("/index", srv.handleIndex).Methods("POST")
 	r.HandleFunc("/join", srv.handleJoin).Methods("POST")
+	r.HandleFunc("/bulkIndex", srv.handleBulkIndex).Methods("POST")
 
 	return &http.Server{
 		Addr:    addr,
@@ -215,4 +216,66 @@ func itob(v int) []byte {
 	b := make([]byte, 8)
 	binary.BigEndian.PutUint64(b, uint64(v))
 	return b
+}
+
+type BulkIndex struct {
+	IDs       []int
+	Documents []Document `json:"documents"`
+}
+
+func (s *httpServer) handleBulkIndex(w http.ResponseWriter, r *http.Request) {
+	s.logger.Info("http: bulk indexing")
+	var req BulkIndex
+	decoder := json.NewDecoder(r.Body)
+	err := decoder.Decode(&req)
+
+	if err != nil {
+		slog.Error("http: indexing", slog.String("error", err.Error()))
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	var docId int
+	err = s.metadataStorage.Update(func(tx *bbolt.Tx) error {
+		b := tx.Bucket([]byte(storage.DocumentMetadataBucket))
+		if b == nil {
+			return errors.New("bucket does not exist")
+		}
+
+		for i, document := range req.Documents {
+			id, _ := b.NextSequence()
+			docId = int(id)
+			err := b.Put(itob(docId), []byte(document.Text))
+
+			if err != nil {
+				slog.Error("http: bulk indexing", slog.String("error", err.Error()))
+				return err
+			}
+
+			req.IDs[i] = docId
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		slog.Error("http: indexing", slog.String("error", err.Error()))
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+
+	//do bulk index using req
+	// err = s.index.BulkIndex(req.IDs, req.Documents)
+	if err != nil {
+		slog.Error("http: indexing", slog.String("error", err.Error()))
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	err = json.NewEncoder(w).Encode(OkResponse{Status: "OK!"})
+	if err != nil {
+		slog.Error("http: indexing", slog.String("error", err.Error()))
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	return
 }

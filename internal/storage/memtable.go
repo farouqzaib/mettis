@@ -45,10 +45,10 @@ func (m *Memtable) Insert(docID int, document string) {
 		panic(err)
 	}
 
-	l := len(m.inMemoryInvertedIndex.Encode())
-	l += len(m.inMemoryVectorIndex.Encode())
+	// l := len(m.inMemoryInvertedIndex.Encode())
+	// l += len(m.inMemoryVectorIndex.Encode())
 
-	m.sizeUsed = l
+	// m.sizeUsed = l
 }
 
 func (m *Memtable) Get(query string, k int) []index.Match {

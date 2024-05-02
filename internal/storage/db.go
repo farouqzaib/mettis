@@ -1,7 +1,6 @@
 package storage
 
 import (
-	"errors"
 	"io"
 	"log"
 	"log/slog"
@@ -51,24 +50,28 @@ func Open(dirname string, logger *slog.Logger) (*IndexStorage, error) {
 	return db, nil
 }
 
-func (d *IndexStorage) Index(docID int, document string) error {
-	l := len(d.memtables.mutable.inMemoryInvertedIndex.Encode())
-	l += len(d.memtables.mutable.inMemoryVectorIndex.Encode())
+func (d *IndexStorage) BulkIndex(docIDs []int, document []string) error {
+	return nil
+}
 
-	needed := []byte(document)
-	if l+len(needed) > memtableFlushThreshold {
-		return errors.New("file too large to be indexed")
-	}
+func (d *IndexStorage) Index(docID int, document string) error {
+	// l := len(d.memtables.mutable.inMemoryInvertedIndex.Encode())
+	// l += len(d.memtables.mutable.inMemoryVectorIndex.Encode())
+
+	// needed := []byte(document)
+	// if l+len(needed) > memtableFlushThreshold {
+	// 	return errors.New("file too large to be indexed")
+	// }
 
 	m := d.memtables.mutable
 
-	if !m.HasRoomForWrite(needed) {
-		m = d.rotateMemtables()
-	}
+	// if !m.HasRoomForWrite(needed) {
+	// 	m = d.rotateMemtables()
+	// }
 
 	m.Insert(docID, document)
 
-	d.maybeScheduleFlush()
+	// d.maybeScheduleFlush()
 
 	if d.memtables.mutable.sizeUsed > memtableFlushThreshold {
 		//drop the memtable if size is too large to fit buffer

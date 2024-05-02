@@ -172,6 +172,10 @@ func (d *DistributedDB) Index(docId int, document string) error {
 	return nil
 }
 
+func (d *DistributedDB) BulkIndex(docIds []int, documents []string) error {
+	return nil
+}
+
 func (d *DistributedDB) Search(query string, k int) ([]index.Match, error) {
 	res := d.DB.Get(query, 10)
 
