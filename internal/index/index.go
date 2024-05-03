@@ -70,25 +70,6 @@ func (i *InvertedIndex) ConcurrentIndex(docID int, tokens []string) {
 	}
 }
 
-func (i *InvertedIndex) BulkIndex(docIDs []int, documents []string) {
-	// slog.Info("index: indexing documents", slog.Int("docID", docID))
-	// tokens := analyzer.Analyze(document)
-
-	// i.ConcurrentIndex(docID, tokens)
-
-	// for j, word := range tokens {
-	// 	_, ok := i.PostingsList[word]
-
-	// 	if !ok {
-	// 		i.PostingsList[word] = *NewSkipList()
-	// 	}
-
-	// 	sk := i.PostingsList[word]
-	// 	sk.Insert(Position{DocumentID: float64(docID), Offset: float64(j)})
-	// 	i.PostingsList[word] = sk
-	// }
-}
-
 func (i *InvertedIndex) Index(docID int, document string) {
 	slog.Info("index: indexing documents", slog.Int("docID", docID))
 	tokens := analyzer.Analyze(document)
