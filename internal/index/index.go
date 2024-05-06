@@ -7,13 +7,14 @@ import (
 	"fmt"
 	"log/slog"
 	"math"
-	"runtime"
 	"strings"
+	"sync"
 
 	"github.com/farouqzaib/fast-search/internal/analyzer"
 )
 
 type InvertedIndex struct {
+	mu           sync.Mutex
 	PostingsList map[string]SkipList
 }
 
@@ -24,69 +25,25 @@ func NewInvertedIndex() *InvertedIndex {
 	}
 }
 
-func (i *InvertedIndex) ConcurrentIndex(docID int, tokens []string) {
-	tokenOffsets := map[string][]int{}
-
-	for j, token := range tokens {
-		_, ok := tokenOffsets[token]
-		if ok {
-			tokenOffsets[token] = append(tokenOffsets[token], j)
-		} else {
-			tokenOffsets[token] = []int{j}
-		}
-	}
-
-	tokensCh := make(chan map[string][]int, len(tokenOffsets))
-	resultCh := make(chan map[string]SkipList, len(tokenOffsets))
-
-	//TODO: make number of workers configurable
-	for w := 0; w < runtime.GOMAXPROCS(0); w++ {
-		go func(tokenCh chan map[string][]int) {
-			for tokenOffset := range tokenCh {
-				sk := *NewSkipList()
-				token := ""
-
-				for tok, offsets := range tokenOffset {
-					token = tok
-					for _, t := range offsets {
-						sk.Insert(Position{DocumentID: float64(docID), Offset: float64(t)})
-					}
-				}
-
-				resultCh <- map[string]SkipList{token: sk}
-			}
-		}(tokensCh)
-	}
-
-	for token, offsets := range tokenOffsets {
-		tokensCh <- map[string][]int{token: offsets}
-	}
-
-	for k := 0; k < len(tokenOffsets); k++ {
-		result := <-resultCh
-		for k, v := range result {
-			i.PostingsList[k] = v
-		}
-	}
-}
-
 func (i *InvertedIndex) Index(docID int, document string) {
+	i.mu.Lock()
+	defer i.mu.Unlock()
 	slog.Info("index: indexing documents", slog.Int("docID", docID))
 	tokens := analyzer.Analyze(document)
 
-	i.ConcurrentIndex(docID, tokens)
+	// i.ConcurrentIndex(docID, tokens)
 
-	// for j, word := range tokens {
-	// 	_, ok := i.PostingsList[word]
+	for j, word := range tokens {
+		_, ok := i.PostingsList[word]
 
-	// 	if !ok {
-	// 		i.PostingsList[word] = *NewSkipList()
-	// 	}
+		if !ok {
+			i.PostingsList[word] = *NewSkipList()
+		}
 
-	// 	sk := i.PostingsList[word]
-	// 	sk.Insert(Position{DocumentID: float64(docID), Offset: float64(j)})
-	// 	i.PostingsList[word] = sk
-	// }
+		sk := i.PostingsList[word]
+		sk.Insert(Position{DocumentID: float64(docID), Offset: float64(j)})
+		i.PostingsList[word] = sk
+	}
 }
 
 func (i *InvertedIndex) First(token string) (Position, error) {

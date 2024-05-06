@@ -19,7 +19,7 @@ type Memtable struct {
 func NewMemtable(sizeLimit int, logger *slog.Logger) *Memtable {
 	m := &Memtable{
 		inMemoryInvertedIndex: index.NewInvertedIndex(),
-		inMemoryVectorIndex:   index.NewHNSW(5, 0.62, 8, 16),
+		inMemoryVectorIndex:   index.NewHNSW(5, 0.62, 2, 16),
 		sizeLimit:             sizeLimit,
 		logger:                logger,
 	}
