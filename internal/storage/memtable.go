@@ -28,32 +28,43 @@ func NewMemtable(sizeLimit int, logger *slog.Logger) *Memtable {
 }
 
 func (m *Memtable) HasRoomForWrite(data []byte) bool {
-	l := len(m.inMemoryInvertedIndex.Encode())
-	l += len(m.inMemoryVectorIndex.Encode())
-
-	sizeNeeded := l + len(data)
-	sizeAvailable := m.sizeLimit - m.sizeUsed
-
-	return sizeNeeded <= sizeAvailable
-}
-
-func (m *Memtable) Index(docID int, document string) {
-	h := index.NewHybridSearch(m.inMemoryInvertedIndex, m.inMemoryVectorIndex, m.logger, index.GetEmbedding)
-	err := h.Index(docID, document)
+	invertedIndexBytes, err := m.inMemoryInvertedIndex.Encode()
 
 	if err != nil {
 		panic(err)
 	}
 
-	m.sizeUsed = len([]byte(document))
+	hnswBytes, err := m.inMemoryVectorIndex.Encode()
+
+	if err != nil {
+		panic(err)
+	}
+
+	sizeNeeded := len(invertedIndexBytes) + len(hnswBytes) + len(data)
+	sizeAvailable := m.sizeLimit - m.sizeUsed
+
+	return sizeNeeded <= sizeAvailable
 }
 
-func (m *Memtable) BulkIndex(docIDs []float64, documents []string) {
+func (m *Memtable) Index(docID int, document string) error {
+	h := index.NewHybridSearch(m.inMemoryInvertedIndex, m.inMemoryVectorIndex, m.logger, index.GetEmbedding)
+	err := h.Index(docID, document)
+
+	if err != nil {
+		return err
+	}
+
+	m.sizeUsed = len([]byte(document))
+
+	return nil
+}
+
+func (m *Memtable) BulkIndex(docIDs []float64, documents []string) error {
 	h := index.NewHybridSearch(m.inMemoryInvertedIndex, m.inMemoryVectorIndex, m.logger, index.GetEmbedding)
 	err := h.BulkIndex(docIDs, documents)
 
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	l := 0
@@ -61,12 +72,20 @@ func (m *Memtable) BulkIndex(docIDs []float64, documents []string) {
 		l += len([]byte(document))
 	}
 	m.sizeUsed = l
+
+	return nil
 }
 
-func (m *Memtable) Get(query string, k int) []index.Match {
+func (m *Memtable) Get(query string, k int) ([]index.Match, error) {
 	h := index.NewHybridSearch(m.inMemoryInvertedIndex, m.inMemoryVectorIndex, m.logger, index.GetEmbedding)
 
-	return h.Search(query, k)
+	matches, err := h.Search(query, k)
+
+	if err != nil {
+		return []index.Match{}, err
+	}
+
+	return matches, nil
 }
 
 func (m *Memtable) Size() int {

@@ -103,7 +103,7 @@ func (d *IndexStorage) Get(query string, k int) []index.Match {
 	for i := len(d.memtables.queue) - 1; i >= 0; i-- {
 		m := d.memtables.queue[i]
 
-		val := m.Get(query, k)
+		val, _ := m.Get(query, k)
 
 		matches = append(matches, val...)
 	}
@@ -113,7 +113,7 @@ func (d *IndexStorage) Get(query string, k int) []index.Match {
 
 			h := index.NewHybridSearch(&d.inMemorySegments[j], &d.inMemoryVectorSegments[j], d.logger, index.GetEmbedding)
 
-			val := h.Search(query, k)
+			val, _ := h.Search(query, k)
 			matchesCh <- val
 		}(j)
 	}
@@ -163,11 +163,23 @@ func (d *IndexStorage) FlushMemtables() error {
 	for i := 0; i < len(flushable); i++ {
 		meta := d.dataStorage.PrepareNewFile()
 
-		err := d.writeSegment(flushable[i].inMemoryInvertedIndex.Encode(), meta, InvertedIndexSegmentPath)
+		invertedIndexBytes, err := flushable[i].inMemoryInvertedIndex.Encode()
+
 		if err != nil {
 			return err
 		}
-		err = d.writeSegment(flushable[i].inMemoryVectorIndex.Encode(), meta, VectorIndexSegmentPath)
+		err = d.writeSegment(invertedIndexBytes, meta, InvertedIndexSegmentPath)
+		if err != nil {
+			return err
+		}
+
+		hnswBytes, err := flushable[i].inMemoryVectorIndex.Encode()
+
+		if err != nil {
+			return err
+		}
+
+		err = d.writeSegment(hnswBytes, meta, VectorIndexSegmentPath)
 		if err != nil {
 			return err
 		}
@@ -214,7 +226,7 @@ func (d *IndexStorage) loadSegments() error {
 		if err != nil {
 			return err
 		}
-		d.inMemorySegments = append(d.inMemorySegments, invertedIndex)
+		d.inMemorySegments = append(d.inMemorySegments, *invertedIndex)
 
 		reader, err = d.dataStorage.OpenFileForReading(f, VectorIndexSegmentPath)
 		if err != nil {
@@ -229,7 +241,7 @@ func (d *IndexStorage) loadSegments() error {
 			return err
 		}
 
-		d.inMemoryVectorSegments = append(d.inMemoryVectorSegments, vectorIndex)
+		d.inMemoryVectorSegments = append(d.inMemoryVectorSegments, *vectorIndex)
 	}
 
 	return nil

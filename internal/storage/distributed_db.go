@@ -267,7 +267,7 @@ type command struct {
 func (f *fsm) Apply(b *raft.Log) interface{} {
 	var c command
 	if err := json.Unmarshal(b.Data, &c); err != nil {
-		panic(fmt.Sprintf("failed to unmarshal command: %s", err.Error()))
+		f.db.logger.Error(fmt.Sprintf("failed to unmarshal command: %s", err.Error()))
 	}
 
 	switch c.Op {

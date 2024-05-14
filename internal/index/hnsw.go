@@ -234,25 +234,25 @@ func (hnsw *HNSW) insert(vec VectorNode) {
 	}
 }
 
-func (h *HNSW) Encode() []byte {
+func (h *HNSW) Encode() ([]byte, error) {
 	var b bytes.Buffer
 	enc := gob.NewEncoder(&b)
 
 	err := enc.Encode(h)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
-	return b.Bytes()
+	return b.Bytes(), nil
 }
 
-func (h *HNSW) Decode(b []byte) HNSW {
-	var q HNSW
+func (h *HNSW) Decode(b []byte) error {
 	buf := bytes.NewBuffer(b)
 	dec := gob.NewDecoder(buf)
-	err := dec.Decode(&q)
+	err := dec.Decode(h)
+
 	if err != nil {
-		panic(err)
+		return err
 	}
 
-	return q
+	return nil
 }

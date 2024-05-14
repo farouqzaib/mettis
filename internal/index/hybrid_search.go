@@ -89,16 +89,16 @@ func (hs *HybridSearch) BulkIndex(docIds []float64, documents []string) error {
 	return nil
 }
 
-func (hs *HybridSearch) Search(query string, k int) []Match {
+func (hs *HybridSearch) Search(query string, k int) ([]Match, error) {
 	ftsResult := hs.FTS.RankProximity(query, k)
 
 	vector, err := hs.getEmbedding(query)
 	if err != nil {
-		panic(err)
+		return []Match{}, err
 	}
 	semanticResult := hs.Semantic.Search(VectorNode{Vector: vector}, 64)
 
-	return mergeResult(IndexResults{FTS: ftsResult, Semantic: semanticResult}, 0.8, k)
+	return mergeResult(IndexResults{FTS: ftsResult, Semantic: semanticResult}, 0.8, k), nil
 }
 
 func mergeResult(results IndexResults, mergeWeight float32, k int) []Match {

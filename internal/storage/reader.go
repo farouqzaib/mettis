@@ -20,52 +20,56 @@ func NewReader(file io.Reader) *Reader {
 	return r
 }
 
-func (r *Reader) loadInvertedIndex() (index.InvertedIndex, error) {
+func (r *Reader) loadInvertedIndex() (*index.InvertedIndex, error) {
 	reader, err := gzip.NewReader(r.br)
 	if err != nil {
 		if err == io.EOF {
-			panic(err)
+			return nil, err
 		}
-		panic(err)
+		return nil, err
 	}
 
 	b, err := io.ReadAll(reader)
 	if err != nil {
 		if err == io.EOF {
-			panic(err)
+			return nil, err
 		}
-		panic(err)
+		return nil, err
 	}
 
 	var i index.InvertedIndex
 
-	i = i.Decode(b)
+	i.Decode(b)
 
-	return i, nil
+	return &i, nil
 }
 
-func (r *Reader) loadVectorIndex() (index.HNSW, error) {
+func (r *Reader) loadVectorIndex() (*index.HNSW, error) {
 	reader, err := gzip.NewReader(r.br)
 	if err != nil {
 		if err == io.EOF {
-			panic(err)
+			return nil, err
 		}
-		panic(err)
+		return nil, err
 	}
 
 	b, err := io.ReadAll(reader)
 	if err != nil {
 		if err == io.EOF {
-			panic(err)
+			return nil, err
 		}
-		panic(err)
+		return nil, err
 	}
 
 	var i index.HNSW
 
-	i = i.Decode(b)
+	err = i.Decode(b)
 
-	return i, nil
+	if err != nil {
+		return nil, err
+	}
+
+	return &i, nil
 }
 
 func (r *Reader) Close() error {

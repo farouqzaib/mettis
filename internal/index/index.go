@@ -236,7 +236,7 @@ func (i *InvertedIndex) RankProximity(query string, k int) []Match {
 	return results[:int(math.Min(float64(k), float64(len(results))))]
 }
 
-func (i *InvertedIndex) Encode() []byte {
+func (i *InvertedIndex) Encode() ([]byte, error) {
 	b := new(bytes.Buffer)
 	// termList := []string{}
 	for k, v := range i.PostingsList {
@@ -270,13 +270,13 @@ func (i *InvertedIndex) Encode() []byte {
 			err := binary.Write(nodeBytes, binary.LittleEndian, uint32(head.Key.DocumentID))
 
 			if err != nil {
-				panic(err)
+				return nil, err
 			}
 
 			err = binary.Write(nodeBytes, binary.LittleEndian, uint32(head.Key.Offset))
 
 			if err != nil {
-				panic(err)
+				return nil, err
 			}
 
 			head = head.Tower[0]
@@ -311,7 +311,7 @@ func (i *InvertedIndex) Encode() []byte {
 				err := binary.Write(towerNodeBytes, binary.LittleEndian, uint16(nodes[offset]))
 
 				if err != nil {
-					panic(err)
+					return nil, err
 				}
 			}
 
@@ -321,7 +321,7 @@ func (i *InvertedIndex) Encode() []byte {
 				err := binary.Write(nilTowerNodeBytes, binary.LittleEndian, uint16(0))
 
 				if err != nil {
-					panic(err)
+					return nil, err
 				}
 				//add len of tower nodes to buffer
 				binary.Write(b, binary.LittleEndian, uint32(len(nilTowerNodeBytes.Bytes())))
@@ -340,10 +340,10 @@ func (i *InvertedIndex) Encode() []byte {
 		}
 	}
 
-	return b.Bytes()
+	return b.Bytes(), nil
 }
 
-func (i *InvertedIndex) Decode(b []byte) InvertedIndex {
+func (i *InvertedIndex) Decode(b []byte) error {
 	recoveredIndex := map[string]SkipList{}
 
 	offset := 0
@@ -416,5 +416,6 @@ func (i *InvertedIndex) Decode(b []byte) InvertedIndex {
 		round++
 	}
 
-	return InvertedIndex{PostingsList: recoveredIndex}
+	i.PostingsList = recoveredIndex
+	return nil
 }

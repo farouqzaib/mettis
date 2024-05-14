@@ -90,12 +90,17 @@ func TestInvertedIndexNextCover(t *testing.T) {
 	expected := []Position{{DocumentID: 1, Offset: 1}, {DocumentID: 1, Offset: 1}}
 
 	tokens := analyzer.Analyze("my batman")
-	got := index.NextCover(tokens, Position{DocumentID: BOF, Offset: BOF})
 
-	b := index.Encode()
-	i := index.Decode(b)
+	b, err := index.Encode()
 
-	got = i.NextCover(tokens, Position{DocumentID: BOF, Offset: BOF})
+	if err != nil {
+		t.Fatalf("index encode returned an error")
+	}
+
+	var reloadedIndex InvertedIndex
+	reloadedIndex.Decode(b)
+
+	got := reloadedIndex.NextCover(tokens, Position{DocumentID: BOF, Offset: BOF})
 
 	fmt.Println(got)
 	if len(got) != 2 {

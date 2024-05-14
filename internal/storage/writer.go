@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"compress/gzip"
 	"io"
-	"log"
 )
 
 const bufLimit = 100000000
@@ -30,13 +29,13 @@ func NewWriter(file io.Writer) *Writer {
 func (w *Writer) WriteDataBlock(inMemoryIndex []byte) error {
 	gz, err := gzip.NewWriterLevel(w.bw, 9)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	if _, err := gz.Write(inMemoryIndex); err != nil {
-		log.Fatal(err)
+		return err
 	}
 	if err := gz.Close(); err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	return nil
