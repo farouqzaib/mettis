@@ -77,11 +77,11 @@ func main() {
 	if joinAddr != "" {
 		b, err := json.Marshal(map[string]string{"addr": raftAddr, "nodeId": nodeId})
 		if err != nil {
-			panic(err)
+			log.Fatal(err)
 		}
 		resp, err := http.Post(fmt.Sprintf("http://%s/join", joinAddr), "application-type/json", bytes.NewReader(b))
 		if err != nil {
-			panic(err)
+			log.Fatal(err)
 		}
 		defer resp.Body.Close()
 	}

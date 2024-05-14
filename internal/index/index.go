@@ -31,8 +31,6 @@ func (i *InvertedIndex) Index(docID int, document string) {
 	slog.Info("index: indexing documents", slog.Int("docID", docID))
 	tokens := analyzer.Analyze(document)
 
-	// i.ConcurrentIndex(docID, tokens)
-
 	for j, word := range tokens {
 		_, ok := i.PostingsList[word]
 
@@ -275,7 +273,7 @@ func (i *InvertedIndex) Encode() []byte {
 				panic(err)
 			}
 
-			_ = binary.Write(nodeBytes, binary.LittleEndian, uint32(head.Key.Offset))
+			err = binary.Write(nodeBytes, binary.LittleEndian, uint32(head.Key.Offset))
 
 			if err != nil {
 				panic(err)
