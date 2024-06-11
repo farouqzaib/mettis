@@ -4,7 +4,7 @@ xdb: Distributed lite vector database built from *scratch.
 - full-text search using proximity ranking
 - semantic search via HNSW + Cosine distance
 - integrated basic text embedding service  (Python HTTP API around a sentence transformer)
-- (naive) weighted full-text + semantic search hybrid
+- Reciprocal Rank Fusion for merging full-text + semantic search results
 - in-memory serving + disk persistence
 - fault-tolerance with segment replication using Raft
 
@@ -44,18 +44,18 @@ go run cmd/server/main.go -httpAddr 127.0.0.1:8111 -nodeId 0 -raftAddr 127.0.0.1
 
 #### API
 
+##### POST /index
+index a document
+```bash
+curl --location '127.0.0.1:8111/index' --header 'Content-Type: application/json' --data '{"text": "some text"}'
+```
+
 ##### GET /search
 do a search
 ```bash
 curl --location --request GET '127.0.0.1:8111/search' \
 --header 'Content-Type: application/json' \
 --data '{"query": "some text"}'
-```
-
-##### POST /index
-index a document
-```bash
-curl --location '127.0.0.1:8111/index' --header 'Content-Type: application/json' --data '{"text": "some text"}'
 ```
 
 ##### Run 3-node cluster

@@ -2,7 +2,10 @@ package index
 
 import (
 	"bytes"
+	"crypto/md5"
 	"encoding/binary"
+	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -200,6 +203,21 @@ func (i *InvertedIndex) NextCover(tokens []string, offset Position) []Position {
 type Match struct {
 	Offsets []Position
 	Score   float64
+}
+
+func (m *Match) GetKey() (string, error) {
+	id := ""
+	for _, offset := range m.Offsets {
+		id = fmt.Sprintf("%s%f", id, offset.DocumentID)
+	}
+
+	data, err := json.Marshal(id)
+	if err != nil {
+		return "", err
+	}
+	hash := md5.Sum(data)
+	val := hex.EncodeToString(hash[:])
+	return val, nil
 }
 
 func (i *InvertedIndex) RankProximity(query string, k int) []Match {

@@ -98,24 +98,34 @@ func (hs *HybridSearch) Search(query string, k int) ([]Match, error) {
 	}
 	semanticResult := hs.Semantic.Search(VectorNode{Vector: vector}, 64)
 
-	return mergeResult(IndexResults{FTS: ftsResult, Semantic: semanticResult}, 0.8, k), nil
+	return mergeResult(IndexResults{FTS: ftsResult, Semantic: semanticResult}, k), nil
 }
 
-func mergeResult(results IndexResults, mergeWeight float32, k int) []Match {
+func mergeResult(results IndexResults, k int) []Match {
 	mergedResults := []Match{}
 
-	seen := map[int]bool{}
-	for _, r := range results.FTS {
-		mergedResults = append(mergedResults, Match{Offsets: r.Offsets, Score: r.Score * float64(1-mergeWeight)})
-		seen[int(r.Offsets[0].DocumentID)] = true
+	seen := map[string]Match{}
+	for rank, r := range results.FTS {
+		matchID, _ := r.GetKey()
+		reciprocalRank := 1.1 / (float64(rank) + 1.)
+		seen[matchID] = Match{Offsets: r.Offsets, Score: reciprocalRank}
 	}
 
-	for _, r := range results.Semantic {
-		modifiedScore := 1. / math.Exp(r.Score) * float64(mergeWeight)
-		if seen[int(r.Offsets[0].DocumentID)] {
-			continue
+	for rank, r := range results.Semantic {
+		matchID, _ := r.GetKey()
+		reciprocalRank := 1. / (float64(rank) + 1.)
+
+		val, ok := seen[matchID]
+		if ok {
+			val.Score += reciprocalRank
+			seen[matchID] = val
+		} else {
+			seen[matchID] = Match{Offsets: r.Offsets, Score: reciprocalRank}
 		}
-		mergedResults = append(mergedResults, Match{Offsets: r.Offsets, Score: modifiedScore})
+	}
+
+	for _, v := range seen {
+		mergedResults = append(mergedResults, v)
 	}
 
 	sort.Slice(mergedResults, func(i, j int) bool {
