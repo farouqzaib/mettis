@@ -1,4 +1,4 @@
-xdb: Distributed lite vector database built from *scratch.
+mettisDB: Distributed lite vector database built from *scratch.
 
 #### What it does:
 - full-text search using proximity ranking
